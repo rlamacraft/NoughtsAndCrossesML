@@ -1,13 +1,14 @@
-module GameState (CellState(X, O, Empty), GameState(State), areIsomorphic) where
+module GameState (Mark(X, O), CellState(Played, Unplayed), GameState(State), areIsomorphic, mockState) where
 
 import Data.List
 
-data CellState = X | O | Empty deriving Eq
+data Mark = X | O deriving (Eq, Show)
+
+data CellState = Played Mark | Unplayed deriving Eq
 
 instance Show CellState where
-  show X = "X"
-  show O = "O"
-  show Empty = "_"
+  show (Played a) = show a
+  show Unplayed = "_"
 
 data GameState = State [[CellState]] deriving Eq
 
@@ -53,3 +54,8 @@ flipRows (State rows) = State $ map reverse rows
 
 transposeGrid :: GameState -> GameState
 transposeGrid (State rows) = State $ transpose rows
+
+
+
+mockState :: GameState
+mockState = State [[Played X, Unplayed, Unplayed], [Played O, Unplayed, Unplayed], [Unplayed, Unplayed, Unplayed]]
