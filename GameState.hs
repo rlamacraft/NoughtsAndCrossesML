@@ -1,6 +1,7 @@
 module GameState (Mark(X, O), CellState(Played, Unplayed), GameState(State), areIsomorphic, mockState) where
 
 import Data.List
+import Control.Applicative
 
 data Mark = X | O deriving (Eq, Show)
 
@@ -10,7 +11,8 @@ instance Show CellState where
   show (Played a) = show a
   show Unplayed = "_"
 
-data GameState = State [[CellState]] deriving Eq
+type Grid = [[CellState]]
+data GameState = State Grid deriving Eq
 
 instance Show GameState where
   show (State []) = ""
@@ -21,6 +23,10 @@ showGridRow :: [CellState] -> String
 showGridRow [] = ""
 showGridRow (x:[]) = " " ++ show x
 showGridRow (x:xs) = " " ++ show x ++ " |" ++ showGridRow xs
+
+---------------------
+-- Isomorpic States
+---------------------
 
 areIsomorphic :: GameState -> GameState -> Bool
 areIsomorphic left right = left `elem` (isomorphicSet right)
@@ -55,7 +61,46 @@ flipRows (State rows) = State $ map reverse rows
 transposeGrid :: GameState -> GameState
 transposeGrid (State rows) = State $ transpose rows
 
+------------------
+-- Win Condition
+------------------
 
+winner :: GameState -> Maybe Mark
+winner (State state) = foldr1 (<|>) $ map ($ state) [
+  winnerByRow,
+  winnerByColumn,
+  winnerByLeftRightDiagonal,
+  winnerByRightLeftDiagonal ]
+
+winnerByRow :: Grid -> Maybe Mark
+winnerByRow state = foldr1 (<|>) $ map rowOfPlayedMark state
+
+winnerByColumn :: Grid -> Maybe Mark
+winnerByColumn = winnerByRow . transpose
+
+winnerByLeftRightDiagonal :: Grid -> Maybe Mark
+winnerByLeftRightDiagonal grid = rowOfPlayedMark [grid !! 0 !! 0, grid !! 1 !! 1, grid !! 2 !! 2]
+
+winnerByRightLeftDiagonal :: Grid -> Maybe Mark
+winnerByRightLeftDiagonal grid = rowOfPlayedMark [grid !! 0 !! 2, grid !! 1 !! 1, grid !! 2 !! 0]
+
+rowOfPlayedMark :: [CellState] -> Maybe Mark
+rowOfPlayedMark state
+  | rowOfSameMark state = case state !! 0 of
+                            Played a -> Just a
+                            Unplayed -> Nothing
+  | otherwise = Nothing
+
+rowOfSameMark :: [CellState] -> Bool
+rowOfSameMark (x:y:xs) = x == y && rowOfSameMark (y:xs)
+rowOfSameMark _ = True
+
+----------
+-- Utils
+----------
 
 mockState :: GameState
 mockState = State [[Played X, Unplayed, Unplayed], [Played O, Unplayed, Unplayed], [Unplayed, Unplayed, Unplayed]]
+
+mockState_winner :: GameState
+mockState_winner = State [[Played X, Unplayed, Played O], [Played X, Played O, Unplayed], [Played X, Unplayed, Unplayed]]
