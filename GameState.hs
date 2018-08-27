@@ -1,4 +1,4 @@
-module GameState (Mark(X, O), CellState(Played, Unplayed), GameState(State), areIsomorphic, mockState) where
+module GameState (Mark(X, O), CellState(Played, Unplayed), Grid, GameState(State), areIsomorphic, winner, mockState) where
 
 import Data.List
 import Control.Applicative
@@ -11,13 +11,17 @@ instance Show CellState where
   show (Played a) = show a
   show Unplayed = "_"
 
-type Grid = [[CellState]]
-data GameState = State Grid deriving Eq
+type Grid a = [[a]]
+data GameState = State (Grid CellState) (Maybe Mark) deriving Eq
+  --Maybe Mark here denotes the winner
 
 instance Show GameState where
-  show (State []) = ""
-  show (State (x:[])) = showGridRow x
-  show (State (x:xs)) = showGridRow x ++ "\n---+---+---\n" ++ show (State xs)
+  show (State grid _) = showGrid grid
+
+showGrid :: Grid CellState -> String
+showGrid [] = ""
+showGrid (x:[]) = showGridRow x
+showGrid (x:xs) = showGridRow x ++ "\n---+---+---\n" ++ showGrid xs
 
 showGridRow :: [CellState] -> String
 showGridRow [] = ""
@@ -56,32 +60,32 @@ flipGrid TopLeftToBottomRight = transposeGrid
 flipGrid TopRightToBottomLeft = transposeGrid . flipGrid Vertical . flipGrid Horizontal
 
 flipRows :: GameState -> GameState
-flipRows (State rows) = State $ map reverse rows
+flipRows (State rows winner) = State (map reverse rows) winner
 
 transposeGrid :: GameState -> GameState
-transposeGrid (State rows) = State $ transpose rows
+transposeGrid (State rows winner) = State (transpose rows) winner
 
 ------------------
 -- Win Condition
 ------------------
 
-winner :: GameState -> Maybe Mark
-winner (State state) = foldr1 (<|>) $ map ($ state) [
+winner :: Grid CellState -> Maybe Mark
+winner state = foldr1 (<|>) $ map ($ state) [
   winnerByRow,
   winnerByColumn,
   winnerByLeftRightDiagonal,
   winnerByRightLeftDiagonal ]
 
-winnerByRow :: Grid -> Maybe Mark
+winnerByRow :: Grid CellState -> Maybe Mark
 winnerByRow state = foldr1 (<|>) $ map rowOfPlayedMark state
 
-winnerByColumn :: Grid -> Maybe Mark
+winnerByColumn :: Grid CellState -> Maybe Mark
 winnerByColumn = winnerByRow . transpose
 
-winnerByLeftRightDiagonal :: Grid -> Maybe Mark
+winnerByLeftRightDiagonal :: Grid CellState -> Maybe Mark
 winnerByLeftRightDiagonal grid = rowOfPlayedMark [grid !! 0 !! 0, grid !! 1 !! 1, grid !! 2 !! 2]
 
-winnerByRightLeftDiagonal :: Grid -> Maybe Mark
+winnerByRightLeftDiagonal :: Grid CellState -> Maybe Mark
 winnerByRightLeftDiagonal grid = rowOfPlayedMark [grid !! 0 !! 2, grid !! 1 !! 1, grid !! 2 !! 0]
 
 rowOfPlayedMark :: [CellState] -> Maybe Mark
@@ -100,7 +104,7 @@ rowOfSameMark _ = True
 ----------
 
 mockState :: GameState
-mockState = State [[Played X, Unplayed, Unplayed], [Played O, Unplayed, Unplayed], [Unplayed, Unplayed, Unplayed]]
+mockState = State [[Played X, Unplayed, Unplayed], [Played O, Unplayed, Unplayed], [Unplayed, Unplayed, Unplayed]] Nothing
 
 mockState_winner :: GameState
-mockState_winner = State [[Played X, Unplayed, Played O], [Played X, Played O, Unplayed], [Played X, Unplayed, Unplayed]]
+mockState_winner = State [[Played X, Unplayed, Played O], [Played X, Played O, Unplayed], [Played X, Unplayed, Unplayed]] (Just X)
