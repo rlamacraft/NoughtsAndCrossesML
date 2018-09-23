@@ -1,4 +1,4 @@
-module GameState (Mark(X, O), CellState(Played, Unplayed), Grid, GameState(State), areIsomorphic, winner, mockState) where
+module GameState (Mark(X, O), CellState(Played, Unplayed), Grid, GameState(State), areIsomorphic, winner, mockState, startGameState, isPlayed) where
 
 import Data.List
 import Control.Applicative
@@ -10,6 +10,10 @@ data CellState = Played Mark | Unplayed deriving Eq
 instance Show CellState where
   show (Played a) = show a
   show Unplayed = "_"
+
+isPlayed :: CellState -> Bool
+isPlayed (Played _ ) = True
+isPlayed (Unplayed) = False
 
 type Grid a = [[a]]
 data GameState = State (Grid CellState) (Maybe Mark) deriving Eq
@@ -108,3 +112,6 @@ mockState = State [[Played X, Unplayed, Unplayed], [Played O, Unplayed, Unplayed
 
 mockState_winner :: GameState
 mockState_winner = State [[Played X, Unplayed, Played O], [Played X, Played O, Unplayed], [Played X, Unplayed, Unplayed]] (Just X)
+
+startGameState :: GameState
+startGameState = State [[Unplayed, Unplayed, Unplayed], [Unplayed, Unplayed, Unplayed], [Unplayed, Unplayed, Unplayed]] Nothing

@@ -38,7 +38,7 @@ weightingUpdateFunction state moveIndex thisIndex didWin currentMoves
   | moveIndex == thisIndex && didWin = (+) (countOfPunishablyPotentialMoves currentMoves)
   | moveIndex == thisIndex && not didWin = max minWeighting . (-) 8
   | moveIndex /= thisIndex && didWin = max minWeighting . (-) 1
-  | moveIndex /= thisIndex && not didWin = (+) 1
+  | moveIndex /= thisIndex && not didWin = (+) 1 --TODO: The sum total of all +1 === 8, so that the roulette selection works
 
 countOfPunishablyPotentialMoves :: PossibleMoves -> Int
 countOfPunishablyPotentialMoves = foldr (\ row total -> total + numOfPunishableInRow row) 0 where

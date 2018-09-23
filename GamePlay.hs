@@ -5,20 +5,38 @@ import GameState
 type GridIndex = (Int, Int)
 data Move = Move Mark GridIndex
 
-data MoveResult = Success GameState
-                | AlreadyPlayed Int Int Mark
-                | AlreadyWon Mark
-                deriving Show
+data MoveResult a = Success a
+                  | AlreadyPlayed Int Int Mark
+                  | AlreadyWon Mark (Grid CellState)
+                  deriving Show
 
-makeMove :: GameState -> Move -> MoveResult
-makeMove (State state currentWinner) (Move mark (i, j)) = case currentWinner of
-  Just x -> AlreadyWon x
+instance Functor MoveResult where
+  fmap f (Success x) = Success (f x)
+  fmap f (AlreadyPlayed i j m) = AlreadyPlayed i j m
+  fmap f (AlreadyWon m x) = AlreadyWon m x
+
+instance Applicative MoveResult where
+  pure x = Success x
+  Success f <*> something = fmap f something
+  (AlreadyPlayed i j m) <*> _ = (AlreadyPlayed i j m)
+  (AlreadyWon m x) <*> _ = (AlreadyWon m x)
+
+instance Monad MoveResult where
+  return x = Success x
+  Success x >>= f = f x
+  AlreadyPlayed i j m >>= f = AlreadyPlayed i j m
+  AlreadyWon m x >>= f = AlreadyWon m x
+
+makeMove :: Move -> GameState -> MoveResult GameState
+makeMove (Move mark (i, j)) (State state currentWinner) = case currentWinner of
+  Just x -> AlreadyWon x state
   Nothing -> case state !! i !! j of
     Played x -> AlreadyPlayed i j x
-    Unplayed -> Success (updateState (State state currentWinner) (Move mark (i, j)))
+    Unplayed -> Success (updateState (Move mark (i, j)) (State state currentWinner) )
+  --TODO: already won should return the end game state
 
-updateState :: GameState -> Move -> GameState
-updateState (State state _) (Move mark (i, j)) = State newGrid (winner newGrid) where
+updateState :: Move -> GameState -> GameState
+updateState (Move mark (i, j)) (State state _) = State newGrid (winner newGrid) where
   before = take i state
   after = drop (i + 1) state
   row = updateRow (state !! i) mark j
